@@ -8,18 +8,19 @@ from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, GlobalAverage
 from keras.losses import categorical_crossentropy, MeanSquaredError, SparseCategoricalCrossentropy, binary_crossentropy
 from keras.optimizers import Adam
 from keras.regularizers import l2
+from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Flatten, Input, Activation
 import cv2 as cv
+import matplotlib.pyplot as plt
 
 num_features = 64
 num_labels = 8
 batch_size = 64
 epochs = 10
-width, height = 48, 48
 np.set_printoptions(threshold=sys.maxsize)
 
 def normalize(data):
-    return (data / 255.0).reshape(data.shape[0], 48, 48, 1)
+    return (data / 255.0)
 
 def NormalizeData(data):
     return (data / 10)
@@ -39,10 +40,10 @@ for index, row in fer2013.iterrows():
         
         if not label_row.empty:
             if label_row.iloc[0]['Usage'] == 'Training':
-                X_train.append(cv.resize(np.array(val, 'float32'), (64,64)))
+                X_train.append(cv.resize(np.array(val, 'float32').reshape(48, 48, 1), (64, 64)))
                 train_y.append(np.array(label_row.iloc[0, 2:], 'float32'))
             elif label_row.iloc[0]['Usage'] == 'PublicTest':
-                X_test.append(cv.resize(np.array(val, 'float32'), (64,64)))
+                X_test.append(cv.resize(np.array(val, 'float32').reshape(48, 48, 1), (64, 64)))
                 test_y.append(np.array(label_row.iloc[0, 2:], 'float32'))
     except:
         print(f"Error occurred at index: {index} for row: {row}")
@@ -57,6 +58,15 @@ X_test = normalize(X_test)
 train_y = NormalizeData(train_y)
 test_y = NormalizeData(test_y)
 
+datagen = ImageDataGenerator(
+    featurewise_center=True,
+    featurewise_std_normalization=True,
+    width_shift_range=0.08,
+    height_shift_range = 0.08,
+    zoom_range=0.05,
+    rotation_range=20,
+    shear_range=0.05,
+    horizontal_flip=True)
 model = Sequential()
 
 model.add(Conv2D(64, (3, 3), activation='relu', 
@@ -66,18 +76,13 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 
 model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 
 model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
 model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
@@ -96,13 +101,15 @@ model.compile(loss='categorical_crossentropy',
               optimizer=Adam(learning_rate=0.001),
               metrics=['accuracy'])
 
-
+datagen.fit(X_train)
 # Train the model
-model.fit(X_train, train_y,
-          batch_size=batch_size,
+model.fit_generator(datagen.flow(X_train, train_y,
+          batch_size=batch_size),
+          steps_per_epoch=X_train.shape[0]/128,
           epochs=epochs,
           verbose=1,
-          validation_data=(X_test, test_y),
+          validation_data=datagen.flow(X_test, test_y, batch_size=128),
+          validation_steps=X_test.shape[0]/128,
           shuffle=True)
 
 # Save the model
