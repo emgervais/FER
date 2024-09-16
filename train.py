@@ -59,32 +59,45 @@ test_y = NormalizeData(test_y)
 
 model = Sequential()
 
-model.add(Conv2D(64, (3, 3), activation='relu', 
-                              input_shape=(64,64,1), padding='same'))
-model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# Input Layer for 64x64 images
+model.add(Input(shape=(64, 64, 1)))
 
-model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# Conv Layer 1
+model.add(Conv2D(int(num_features / 2), kernel_size=(3, 3), padding='same'))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))  # Output size: 32x32
 
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# Conv Layer 2
+model.add(Conv2D(num_features, kernel_size=(3, 3), padding='same'))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))  # Output size: 16x16
 
-model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# Conv Layer 3
+model.add(Conv2D(num_features * 2, kernel_size=(3, 3), padding='same'))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))  # Output size: 8x8
 
+# Conv Layer 4
+model.add(Conv2D(num_features * 4, kernel_size=(3, 3), padding='same'))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))  # Output size: 4x4
+
+# Flatten for Dense layers
 model.add(Flatten())
-model.add(Dense(1024, activation='relu'))
+
+# Fully Connected Layers
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.5))
 
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.5))
+# Output Layer (assuming softmax for 7 categories)
+model.add(Dense(num_labels, activation='softmax'))
 
-model.add(Dense(8, activation='softmax'))
 
 # Compile the model
 model.compile(loss='categorical_crossentropy',
