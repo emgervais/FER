@@ -8,7 +8,6 @@ from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, GlobalAverage
 from keras.losses import categorical_crossentropy, MeanSquaredError, SparseCategoricalCrossentropy, binary_crossentropy
 from keras.optimizers import Adam
 from keras.regularizers import l2
-from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Flatten, Input, Activation
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -20,7 +19,7 @@ epochs = 10
 np.set_printoptions(threshold=sys.maxsize)
 
 def normalize(data):
-    return (data / 255.0)
+    return (data / 255.0).reshape(data.shape[0], 64, 64, 1)
 
 def NormalizeData(data):
     return (data / 10)
@@ -58,15 +57,6 @@ X_test = normalize(X_test)
 train_y = NormalizeData(train_y)
 test_y = NormalizeData(test_y)
 
-datagen = ImageDataGenerator(
-    featurewise_center=True,
-    featurewise_std_normalization=True,
-    width_shift_range=0.08,
-    height_shift_range = 0.08,
-    zoom_range=0.05,
-    rotation_range=20,
-    shear_range=0.05,
-    horizontal_flip=True)
 model = Sequential()
 
 model.add(Conv2D(64, (3, 3), activation='relu', 
@@ -101,15 +91,13 @@ model.compile(loss='categorical_crossentropy',
               optimizer=Adam(learning_rate=0.001),
               metrics=['accuracy'])
 
-datagen.fit(X_train)
+
 # Train the model
-model.fit_generator(datagen.flow(X_train, train_y,
-          batch_size=batch_size),
-          steps_per_epoch=X_train.shape[0]/128,
+model.fit(X_train, train_y,
+          batch_size=batch_size,
           epochs=epochs,
           verbose=1,
-          validation_data=datagen.flow(X_test, test_y, batch_size=128),
-          validation_steps=X_test.shape[0]/128,
+          validation_data=(X_test, test_y),
           shuffle=True)
 
 # Save the model
