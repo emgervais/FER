@@ -9,6 +9,7 @@ from keras.losses import categorical_crossentropy, MeanSquaredError, SparseCateg
 from keras.optimizers import Adam
 from keras.regularizers import l2
 from keras.layers import Flatten, Input, Activation
+import cv2 as cv
 
 num_features = 64
 num_labels = 8
@@ -38,10 +39,10 @@ for index, row in fer2013.iterrows():
         
         if not label_row.empty:
             if label_row.iloc[0]['Usage'] == 'Training':
-                X_train.append(np.array(val, 'float32'))
+                X_train.append(cv.resize(np.array(val, 'float32'), (64,64)))
                 train_y.append(np.array(label_row.iloc[0, 2:], 'float32'))
             elif label_row.iloc[0]['Usage'] == 'PublicTest':
-                X_test.append(np.array(val, 'float32'))
+                X_test.append(cv.resize(np.array(val, 'float32'), (64,64)))
                 test_y.append(np.array(label_row.iloc[0, 2:], 'float32'))
     except:
         print(f"Error occurred at index: {index} for row: {row}")
@@ -59,7 +60,7 @@ test_y = NormalizeData(test_y)
 model = Sequential()
 
 model.add(Conv2D(64, (3, 3), activation='relu', 
-                              input_shape=(48,48,1), padding='same'))
+                              input_shape=(64,64,1), padding='same'))
 model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
