@@ -58,35 +58,40 @@ test_y = NormalizeData(test_y)
 
 model = Sequential()
 
-model.add(Input(shape=X_train.shape[1:]))
-model.add(Conv2D(num_features / 2, kernel_size=(3, 3)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Conv2D(64, (3, 3), activation='relu', 
+                              input_shape=(48,48,1), padding='same'))
+model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
 
-model.add(Conv2D(num_features, kernel_size=(3, 3)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
 
-model.add(Conv2D(num_features * 2, (3, 3)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
 
-model.add(Conv2D(num_features * 4, (3, 3)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
 model.add(Flatten())
+model.add(Dense(1024, activation='relu'))
+model.add(Dropout(0.5))
 
-model.add(Dense(128, activation='relu'))
+model.add(Dense(1024, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_labels, activation='softmax'))
+
+model.add(Dense(8, activation='softmax'))
 
 # Compile the model
-model.compile(loss='binary_crossentropy',
+model.compile(loss='categorical_crossentropy',
               optimizer=Adam(learning_rate=0.001),
               metrics=['accuracy'])
 
