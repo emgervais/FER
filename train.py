@@ -5,22 +5,23 @@ import joblib as jb
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, GlobalAveragePooling2D
-from keras.losses import categorical_crossentropy, MeanSquaredError
+from keras.losses import categorical_crossentropy, MeanSquaredError, SparseCategoricalCrossentropy, binary_crossentropy
 from keras.optimizers import Adam
 from keras.regularizers import l2
-from keras.layers import Flatten, Input
+from keras.layers import Flatten, Input, Activation
 
 num_features = 64
 num_labels = 8
 batch_size = 64
-epochs = 5
+epochs = 10
 width, height = 48, 48
+np.set_printoptions(threshold=sys.maxsize)
 
 def normalize(data):
     return (data / 255.0).reshape(data.shape[0], 48, 48, 1)
 
 def NormalizeData(data):
-    return (data - np.min(data)) / (np.max(data) - np.min(data))
+    return (data / 10)
 
 fer2013 = pd.read_csv("fer2013.csv")
 ferplus_labels = pd.read_csv("label.csv")
@@ -58,41 +59,43 @@ test_y = NormalizeData(test_y)
 model = Sequential()
 
 model.add(Input(shape=X_train.shape[1:]))
-model.add(Conv2D(num_features, kernel_size=(3, 3), activation='relu'))
+model.add(Conv2D(num_features, kernel_size=(3, 3)))
 model.add(BatchNormalization())
-model.add(Conv2D(num_features, kernel_size=(3, 3), activation='relu'))
-model.add(BatchNormalization())
-model.add(Dropout(0.5))
+model.add(Activation('elu'))
 
-model.add(Conv2D(num_features, (3, 3), activation='relu'))
-model.add(Conv2D(num_features, (3, 3), activation='relu'))
+model.add(Conv2D(num_features, kernel_size=(3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('elu'))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 
-model.add(Conv2D(2 * num_features, kernel_size=(3, 3), activation='relu'))
+model.add(Conv2D(num_features * 2, (3, 3)))
 model.add(BatchNormalization())
-model.add(Conv2D(2 * num_features, kernel_size=(3, 3), activation='relu'))
+model.add(Activation('elu'))
+model.add(Conv2D(num_features * 2, (3, 3)))
 model.add(BatchNormalization())
-
-model.add(Conv2D(2 * num_features, (3, 3), activation='relu'))
-model.add(Conv2D(2 * num_features, (3, 3), activation='relu'))
+model.add(Activation('elu'))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 
-model.add(Conv2D(4 * num_features, kernel_size=(3, 3), activation='relu'))
+model.add(Conv2D(4 * num_features, kernel_size=(3, 3)))
 model.add(BatchNormalization())
-model.add(Conv2D(4 * num_features, kernel_size=(3, 3), activation='relu'))
+model.add(Activation('elu'))
+model.add(Conv2D(4 * num_features, kernel_size=(3, 3)))
 model.add(BatchNormalization())
+model.add(Activation('elu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Dropout(0.3))
 model.add(Flatten())
 
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(num_labels, activation='linear'))
+model.add(Dense(128, activation='elu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+model.add(Dense(num_labels, activation='softmax'))
 
 # Compile the model
-model.compile(loss='MeanSquaredError',
-              optimizer=Adam(),
+model.compile(loss='binary_crossentropy',
+              optimizer=Adam(learning_rate=0.001),
               metrics=['accuracy'])
+
 
 # Train the model
 model.fit(X_train, train_y,
